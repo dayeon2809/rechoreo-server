@@ -113,7 +113,7 @@ app.get("/poem", async (req, res) => {
               background: rgba(0, 0, 0, 0.55);
               border-radius: 16px;
               padding: 2em;
-              max-width: 800px;
+              max-width: 400px;
               margin: auto;
             }
             h2 {
@@ -129,7 +129,7 @@ app.get("/poem", async (req, res) => {
         </head>
         <body>
           <div class="container">
-            <h2>몸의 언어 – 감정: ${emotion}</h2>
+            <h2>몸의 언어 – ${emotion}</h2>
             <pre>${poem || "📭 시가 존재하지 않습니다."}</pre>
           </div>
         </body>
