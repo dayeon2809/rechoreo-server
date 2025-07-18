@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "Node.js server for Google Sheets interaction",
   "main": "sheet_server.js",
-  "type": "module",
   "scripts": {
     "start": "node sheet_server.js"
   },
