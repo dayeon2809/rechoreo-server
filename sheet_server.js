@@ -74,28 +74,71 @@ app.listen(PORT, () => {
   console.log(`🚀 서버 실행됨: http://localhost:${PORT}`);
 });
 
-app.get("/poems", async (req, res) => {
+app.get("/poem", async (req, res) => {
   try {
+    const rowIndex = parseInt(req.query.row, 10); // ?row=숫자
+    if (isNaN(rowIndex)) {
+      return res.status(400).send("❌ 유효하지 않은 row 값입니다.");
+    }
+
     const client = await auth.getClient();
     const sheets = google.sheets({ version: "v4", auth: client });
 
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A2:O`, // O열까지의 모든 데이터
+      range: `${SHEET_NAME}!A${rowIndex}:O${rowIndex}`, // 한 행만 조회
     });
 
-    const rows = response.data.values || [];
+    const row = response.data.values?.[0];
+    if (!row) return res.status(404).send("❌ 해당 행의 데이터가 없습니다.");
 
-    const poems = rows.map(row => ({
-      timestamp: row[0] || "",
-      emotion: row[1] || "",
-      poem: row[10] || "",
-      qrcode: row[13] || "",
-    })).filter(entry => entry.poem && entry.poem.trim() !== "");
+    const timestamp = row[0] || "";
+    const emotion = row[1] || "";
+    const poem = row[10] || "";
+    const imageKeyword = row[5]?.toLowerCase() || "emotion";
 
-    res.json({ poems });
+    const html = `
+      <html>
+        <head><meta charset="UTF-8">
+          <style>
+            body {
+              font-family: 'Noto Sans KR', sans-serif;
+              background: url("https://source.unsplash.com/1600x900/?${encodeURIComponent(imageKeyword)}") no-repeat center center fixed;
+              background-size: cover;
+              color: white;
+              text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+              padding: 3em;
+            }
+            .container {
+              background: rgba(0, 0, 0, 0.55);
+              border-radius: 16px;
+              padding: 2em;
+              max-width: 800px;
+              margin: auto;
+            }
+            h2 {
+              font-size: 2em;
+              margin-bottom: 0.5em;
+            }
+            pre {
+              white-space: pre-wrap;
+              font-size: 1.2em;
+              line-height: 1.6em;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h2>몸의 언어 – 감정: ${emotion}</h2>
+            <pre>${poem || "📭 시가 존재하지 않습니다."}</pre>
+          </div>
+        </body>
+      </html>
+    `;
+
+    res.status(200).send(html);
   } catch (err) {
-    console.error("❌ 시트 불러오기 실패:", err);
-    res.status(500).send("시트에서 데이터를 불러올 수 없습니다");
+    console.error("❌ /poem 라우트 오류:", err);
+    res.status(500).send("서버 오류로 시를 불러올 수 없습니다.");
   }
 });
